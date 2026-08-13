@@ -1,0 +1,126 @@
+/* @import MORA biti prvi u fajlu (pre svih pravila osim @charset i @layer) */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Space+Grotesk:wght@300..700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+
+/* FRONTIER/26 — hue 220 (glass blue) */
+@property --hue {
+  syntax: '<number>';
+  initial-value: 220;
+  inherits: true;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --hue: 220;
+  --bg:         oklch(0.13 0.022 240);
+  --bg-2:       oklch(0.17 0.025 235);
+  --ink:        oklch(0.96 0.010 230);
+  --ink-dim:    oklch(0.82 0.020 230);
+  --ink-faint:  oklch(0.68 0.022 230);
+  --acc-1:      oklch(0.74 0.18 var(--hue));
+  --acc-2:      oklch(0.88 0.14 calc(var(--hue) - 80));
+  --acc-3:      oklch(0.80 0.16 calc(var(--hue) + 80));
+  --line:       oklch(1 0 0 / 0.08);
+  --glass:      oklch(1 0 0 / 0.04);
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-body:    "Space Grotesk", system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --pad:    clamp(1.25rem, 4vw, 4rem);
+  --radius: 1.25rem;
+  interpolate-size: allow-keywords;
+}
+
+html {
+  scroll-behavior: smooth;
+  scrollbar-color: oklch(0.45 0.08 240) transparent;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100dvh;
+  overflow-x: hidden;
+  font-weight: 400;
+  line-height: 1.65;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Film grain */
+body::after {
+  content: "";
+  position: fixed;
+  inset: -50%;
+  z-index: 200;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>");
+  animation: grain 0.9s steps(4) infinite;
+}
+@keyframes grain {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(-2%, 3%); }
+  50%  { transform: translate(3%, -2%); }
+  75%  { transform: translate(-3%, -3%); }
+  100% { transform: translate(2%, 2%); }
+}
+
+/* Pointer aura */
+#aura {
+  position: fixed;
+  width: 55vmax; height: 55vmax;
+  translate: -50% -50%;
+  background: radial-gradient(circle,
+    oklch(0.65 0.2 var(--hue) / 0.08),
+    transparent 60%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  z-index: 1;
+  transition: left 0.12s ease, top 0.12s ease;
+}
+@media (pointer: coarse) { #aura { display: none; } }
+
+/* Scroll progress */
+#progress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--acc-1), var(--acc-2), var(--acc-3));
+  transform-origin: left;
+  scale: 0 1;
+  animation: progress-grow linear both;
+  animation-timeline: scroll(root);
+  z-index: 300;
+}
+@keyframes progress-grow { to { scale: 1 1; } }
+@supports not (animation-timeline: scroll(root)) { #progress { display: none; } }
+
+/* Selection */
+::selection { background: var(--acc-1); color: oklch(0.15 0.02 240); }
+
+/* Scroll reveal */
+.reveal {
+  animation: reveal-in linear both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 55%;
+}
+@keyframes reveal-in {
+  from { opacity: 0; translate: 0 2.5rem; filter: blur(6px); }
+  to   { opacity: 1; translate: 0 0; filter: blur(0); }
+}
+@supports not (animation-timeline: view()) {
+  .reveal { animation: none; opacity: 0; translate: 0 2rem;
+    transition: opacity 0.8s ease, translate 0.8s ease; }
+  .reveal.io-on { opacity: 1; translate: 0 0; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

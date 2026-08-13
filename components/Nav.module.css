@@ -1,0 +1,68 @@
+.nav {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 250;
+  backdrop-filter: blur(16px) saturate(1.5);
+  background: oklch(0.13 0.022 240 / 0.6);
+  border-bottom: 1px solid var(--line);
+  padding: 0.85rem var(--pad);
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.logo {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 600;
+}
+.logoMark { color: var(--acc-2); font-size: 1rem; }
+
+.links {
+  display: flex;
+  gap: 1.5rem;
+  margin-left: auto;
+}
+.links a {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.links a:hover { color: var(--ink); }
+
+.auth {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: 1rem;
+}
+.email {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+  letter-spacing: 0.05em;
+}
+.signOutBtn {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.signOutBtn:hover { border-color: var(--acc-3); color: var(--acc-3); }

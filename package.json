@@ -1,0 +1,36 @@
+{
+  "name": "graviranje-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "three": "latest",
+    "@react-three/fiber": "latest",
+    "@react-three/drei": "latest",
+    "zustand": "latest",
+    "better-auth": "latest",
+    "@prisma/client": "latest",
+    "@prisma/adapter-pg": "latest",
+    "pg": "latest",
+    "resend": "latest",
+    "dotenv": "latest"
+  },
+  "devDependencies": {
+    "typescript": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@types/node": "latest",
+    "@types/three": "latest",
+    "@types/pg": "latest",
+    "prisma": "latest"
+  }
+}
