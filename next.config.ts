@@ -2,10 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   experimental: {
-    serverActions: { allowedOrigins: ["localhost:3000"] },
-  },
-  images: {
-    remotePatterns: [],
+    serverActions: {
+      // Base64 slike umeju da budu velike
+      bodySizeLimit: "8mb",
+    },
   },
 };
 

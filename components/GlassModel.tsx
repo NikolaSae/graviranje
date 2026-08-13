@@ -2,49 +2,40 @@
 import { useRef, useMemo, useEffect } from "react";
 import * as THREE from "three";
 import { useConfigurator } from "@/store/configurator";
-
-const TEX_W = 1024;
-const TEX_H = 512;
-
-// Luk na kome stoji graviranje (radijani). Manji luk = manje izoblicenja.
-const ARC = Math.PI * 0.75;
+import { GLASS_PROFILES, buildLathe } from "@/lib/glassModels";
+import {
+  TEX_W, TEX_H, drawPlaceholder, drawText, drawImageEtched,
+} from "@/lib/engraveCanvas";
 
 export function GlassModel() {
   const {
-    mode, text, fontFamily, fontSize,
-    posX, posY, imageDataUrl, imageScale,
+    glassType, mode, text, fontFamily, fontSize,
+    posX, posY, imageDataUrl, imageScale, imageThreshold, imageInvert,
   } = useConfigurator();
 
-  // ── Telo case ──────────────────────────────────────────────────────────
-  const glassGeometry = useMemo(() => {
-    const points = [
-      new THREE.Vector2(0.0,  -0.72),
-      new THREE.Vector2(0.26, -0.72),
-      new THREE.Vector2(0.22, -0.65),
-      new THREE.Vector2(0.28, -0.40),
-      new THREE.Vector2(0.38,  0.00),
-      new THREE.Vector2(0.40,  0.35),
-      new THREE.Vector2(0.38,  0.60),
-      new THREE.Vector2(0.36,  0.72),
-      new THREE.Vector2(0.38,  0.72),
-    ];
-    return new THREE.LatheGeometry(points, 96);
-  }, []);
+  const profile = GLASS_PROFILES[glassType];
 
-  // ── Povrsina za graviranje: luk cilindra tik uz staklo ─────────────────
+  // ── Telo case ──────────────────────────────────────────────────────────
+  const glassGeometry = useMemo(() => buildLathe(profile), [profile]);
+
+  // ── Povrsina za graviranje: luk tik uz staklo ──────────────────────────
   const engraveGeometry = useMemo(() => {
+    const e = profile.engrave;
     const g = new THREE.CylinderGeometry(
-      0.408,          // radiusTop  (staklo je ~0.40 -> mi smo tik iznad)
-      0.402,          // radiusBottom
-      0.52,           // height
-      64, 1,
-      true,           // openEnded
-      -ARC / 2,       // thetaStart -> centrirano ka +Z (ka kameri)
-      ARC
+      e.radiusTop, e.radiusBottom, e.height,
+      72, 1, true,
+      -e.arc / 2, e.arc
     );
-    g.translate(0, 0.18, 0);
+    g.translate(0, e.y, 0);
     return g;
-  }, []);
+  }, [profile]);
+
+  // ── Drska (krigla) ─────────────────────────────────────────────────────
+  const handleGeometry = useMemo(() => {
+    if (!profile.handle) return null;
+    const { radius, tube } = profile.handle;
+    return new THREE.TorusGeometry(radius, tube, 16, 40, Math.PI * 1.25);
+  }, [profile]);
 
   // ── Canvas tekstura ────────────────────────────────────────────────────
   const { canvas, texture } = useMemo(() => {
@@ -57,6 +48,16 @@ export function GlassModel() {
     return { canvas: c, texture: t };
   }, []);
 
+  // Stare geometrije se moraju osloboditi pri promeni modela case,
+  // inace svaki klik na chip ostavlja bafer na GPU.
+  useEffect(() => () => glassGeometry.dispose(), [glassGeometry]);
+  useEffect(() => () => engraveGeometry.dispose(), [engraveGeometry]);
+  useEffect(() => {
+    if (!handleGeometry) return;
+    return () => handleGeometry.dispose();
+  }, [handleGeometry]);
+  useEffect(() => () => texture.dispose(), [texture]);
+
   // Token sprecava da zakasneli img.onload prepise noviji crtez
   const drawToken = useRef(0);
 
@@ -65,66 +66,41 @@ export function GlassModel() {
     if (!ctx) return;
     const token = ++drawToken.current;
 
-    ctx.clearRect(0, 0, TEX_W, TEX_H);
-
-    const cx = TEX_W * posX;
-    const cy = TEX_H * (1 - posY); // slider gore = gore na casi
+    const opts = {
+      mode, text, fontFamily, fontSize, posX, posY,
+      imageScale, imageThreshold, imageInvert,
+    };
 
     const isEmpty =
       (mode === "text" && !text.trim()) ||
       (mode === "image" && !imageDataUrl);
 
-    // Placeholder dok korisnik nista nije uneo
     if (isEmpty) {
-      ctx.save();
-      ctx.fillStyle = "rgba(255,255,255,0.22)";
-      ctx.font = "500 44px ui-monospace, monospace";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.setLineDash([8, 8]);
-      ctx.strokeStyle = "rgba(255,255,255,0.15)";
-      ctx.lineWidth = 3;
-      ctx.strokeRect(TEX_W * 0.18, TEX_H * 0.28, TEX_W * 0.64, TEX_H * 0.44);
-      ctx.fillText("VAŠ NATPIS OVDE", TEX_W / 2, TEX_H / 2);
-      ctx.restore();
+      drawPlaceholder(ctx);
       texture.needsUpdate = true;
       return;
     }
 
     if (mode === "text") {
-      ctx.save();
-      ctx.font = `600 ${fontSize * 1.6}px ${fontFamily}`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      // Matirano staklo: mek trag + citak jezgro
-      ctx.shadowColor = "rgba(220,245,255,0.85)";
-      ctx.shadowBlur = 26;
-      ctx.fillStyle = "rgba(255,255,255,0.55)";
-      ctx.fillText(text, cx, cy);
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = "rgba(255,255,255,0.97)";
-      ctx.fillText(text, cx, cy);
-      ctx.restore();
+      drawText(ctx, opts);
       texture.needsUpdate = true;
       return;
     }
 
-    if (mode === "image" && imageDataUrl) {
+    if (imageDataUrl) {
       const img = new Image();
       img.onload = () => {
-        if (token !== drawToken.current) return; // zastareo crtez -> odbaci
-        const w = TEX_W * imageScale;
-        const h = (img.naturalHeight / img.naturalWidth) * w;
-        ctx.clearRect(0, 0, TEX_W, TEX_H);
-        ctx.save();
-        ctx.globalAlpha = 0.92;
-        ctx.drawImage(img, cx - w / 2, cy - h / 2, w, h);
-        ctx.restore();
+        if (token !== drawToken.current) return; // zastareo crtez
+        drawImageEtched(ctx, img, opts);
         texture.needsUpdate = true;
       };
       img.src = imageDataUrl;
     }
-  }, [mode, text, fontFamily, fontSize, posX, posY, imageDataUrl, imageScale, canvas, texture]);
+  }, [
+    mode, text, fontFamily, fontSize, posX, posY,
+    imageDataUrl, imageScale, imageThreshold, imageInvert,
+    canvas, texture,
+  ]);
 
   return (
     <group>
@@ -145,6 +121,27 @@ export function GlassModel() {
           side={THREE.DoubleSide}
         />
       </mesh>
+
+      {/* Drska za kriglu */}
+      {handleGeometry && profile.handle && (
+        <mesh
+          geometry={handleGeometry}
+          position={[profile.handle.radius * 0.92, profile.handle.y, 0]}
+          rotation={[0, 0, -Math.PI * 0.62]}
+          castShadow
+        >
+          <meshPhysicalMaterial
+            color={new THREE.Color(0x9fd4ef)}
+            transmission={0.9}
+            roughness={0.1}
+            thickness={0.35}
+            ior={1.5}
+            transparent
+            opacity={0.9}
+            envMapIntensity={1.6}
+          />
+        </mesh>
+      )}
 
       {/* Graviranje */}
       <mesh geometry={engraveGeometry} renderOrder={2}>

@@ -103,3 +103,26 @@
   padding: 0.2em 0.5em;
   border-radius: 0.3em;
 }
+
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  background: oklch(0.88 0.14 140 / 0.05);
+}
+.summaryLabel {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.summaryValue {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--ink);
+}

@@ -1,13 +1,18 @@
 "use client";
 import { useState } from "react";
 import { useConfigurator } from "@/store/configurator";
+import { GLASS_PROFILES } from "@/lib/glassModels";
 import styles from "./OrderForm.module.css";
 
 type Status = "idle" | "loading" | "success" | "error";
 
 export function OrderForm() {
-  const { mode, text, fontFamily, fontSize, posX, posY, imageDataUrl, imageScale } =
-    useConfigurator();
+  const {
+    glassType, mode, text, fontFamily, fontSize,
+    posX, posY, imageDataUrl, imageScale, imageThreshold, imageInvert,
+  } = useConfigurator();
+
+  const glassLabel = GLASS_PROFILES[glassType].label;
 
   const [fullName, setFullName] = useState("");
   const [address, setAddress] = useState("");
@@ -30,7 +35,9 @@ export function OrderForm() {
 
     const engraving = {
       mode,
-      ...(mode === "text" ? { text, fontFamily, fontSize } : { imageDataUrl, imageScale }),
+      ...(mode === "text"
+        ? { text, fontFamily, fontSize }
+        : { imageDataUrl, imageScale, imageThreshold, imageInvert }),
       posX,
       posY,
     };
@@ -39,7 +46,7 @@ export function OrderForm() {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, address, engraving }),
+        body: JSON.stringify({ fullName, address, glassType, engraving }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Greška");
@@ -66,6 +73,13 @@ export function OrderForm() {
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
+      <div className={styles.summary}>
+        <span className={styles.summaryLabel}>Vaša porudžbina</span>
+        <span className={styles.summaryValue}>
+          {glassLabel} · {mode === "text" ? text || "—" : "slika"}
+        </span>
+      </div>
+
       {!hasEngraving && (
         <div className={styles.warning}>
           ⚠️ Niste dodali graviranje. Dodajte tekst ili sliku iznad.
